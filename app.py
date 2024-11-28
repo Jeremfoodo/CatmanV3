@@ -8,6 +8,12 @@ st.set_page_config(
     layout="wide"
 )
 
+# Initialisation des variables de session pour conserver l'état
+if 'selected_product' not in st.session_state:
+    st.session_state['selected_product'] = None
+if 'complementary_results' not in st.session_state:
+    st.session_state['complementary_results'] = None
+
 # Page de démarrage
 st.title("Application d'Analyse")
 option = st.selectbox(
@@ -32,10 +38,26 @@ if option == "Analyse de complémentarité":
 
         # Obtenir le top 30 des produits
         top_products = get_top_products(data)
-        product_choice = st.selectbox("Choisissez un produit :", top_products)
+        product_choice = st.selectbox("Choisissez un produit :", top_products, key="product_choice")
+
+        # Conserver le produit sélectionné dans la session
+        st.session_state['selected_product'] = product_choice
+
+    # Vérifiez si un produit a été sélectionné
+    if st.session_state['selected_product']:
+        st.write(f"Produit sélectionné : {st.session_state['selected_product']}")
 
         if st.button("Analyser les produits complémentaires"):
-            results = apriori_analysis(data, product_choice)
-            st.write("Produits complémentaires les plus probables :")
-            st.dataframe(results)
+            # Charger les données (de nouveau pour éviter les erreurs)
+            data = load_country_data(country)
 
+            # Effectuer l'analyse de complémentarité
+            results = apriori_analysis(data, st.session_state['selected_product'])
+
+            # Conserver les résultats dans la session
+            st.session_state['complementary_results'] = results
+
+    # Afficher les résultats si disponibles
+    if st.session_state['complementary_results'] is not None:
+        st.write("Produits complémentaires les plus probables :")
+        st.dataframe(st.session_state['complementary_results'])
